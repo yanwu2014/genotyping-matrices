@@ -23,7 +23,8 @@ def main():
 # Input: dataFrame, cellBarcodes object, barcode to gene mapping
 # Output: genotyped dataframe
 def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
-                 singleFrac = 0.85, minUMIreads = 5, minReads = 20, minUMIs = 3):
+                 singleFrac = 0.9, minUMIreads = 5, minReads = 20, minUMIs = 3,
+                 dualFrac = 0.4):
     
     with open(barcodeToGeneFile) as f:
         barcodeToGene = cp.load(f)
@@ -35,7 +36,8 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
             cellBarcodes[cell_bc].genotype = 'noGRNA'
         else:
             cellBarcodes[cell_bc].countBarcodes(minReads = minUMIreads)
-            cellBarcodes[cell_bc].callBarcode(barcodeToGene, minReads, minUMIs, singleFrac)
+            cellBarcodes[cell_bc].callBarcode(barcodeToGene, minReads, minUMIs, singleFrac,
+                                              dualFrac)
     
     cells = 0
     empty = 0
