@@ -109,7 +109,7 @@ class Cell:
                         duals.append(libGBC)
                 if len(duals) == 2:
                     self.type = 'dual'
-                    self.genotype = barcodeToGene[duals[0]] + ':' + barcodeToGene[duals[1]]
+                    self.genotype = barcodeToGene[duals[0]] + ',' + barcodeToGene[duals[1]]
                 else:
                     self.type = 'noPlasmid'
                     self.genotype = 'noPlasmid'

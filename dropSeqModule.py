@@ -43,8 +43,9 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
     empty = 0
     noPlasmid = 0
     nocalls = 0
-    useful = 0
-    
+    singles = 0
+    duals = 0
+
     log_file = open('barcode_calling_log.txt','w')
     for cbc,cell in sorted(cellBarcodes.items(),key = lambda x: x[1].transcripts, reverse=True):
         cells += 1
@@ -52,7 +53,8 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
         if cell.genotype == 'noPlasmid': noPlasmid += 1
         elif cell.genotype == 'noCall': nocalls += 1
         elif cell.genotype == 'noGRNA': empty += 1
-        elif cell.type == 'single': useful += 1   
+        elif cell.type == 'single': singles += 1   
+        elif cell.type == 'dual': duals += 1
 
         if cell.genotype != 'noGRNA':
             _writeCellStats(cell, cbc, log_file)
@@ -68,7 +70,8 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
     print 'No_gRNA\t' + str(empty)
     print 'No_Call\t' + str(nocalls)
     print 'No_Plasmid\t' + str(noPlasmid)
-    print 'Useful_cells\t' + str(useful)
+    print 'Singles\t' + str(singles)
+    print 'Duals\t' + str(duals)
     
     return cellBarcodes
 
