@@ -101,7 +101,8 @@ class Cell:
                     self.type = 'noPlasmid'
                     self.genotype = 'noPlasmid'
             
-            elif len(dualGBC) == 2:
+            elif len(dualGBC) == 2 and (candidateReadFracs[dualGBC[0]] + \
+                    candidateReadFracs[dualGBC[1]] > singleFrac):
                 duals = []
                 for gbc in dualGBC:
                     libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
@@ -127,9 +128,7 @@ def callGenotype(dataFrame, cellBarcodes):
     
     dataFrame = dataFrame[cellKeys]
     newColNames = [barcode + '_' + cellBarcodes[barcode].type + '_' + \
-                   cellBarcodes[barcode].genotype + '_' + \
-                   cellBarcodes[barcode].genotype.split('-')[0] \
-                   for barcode in dataFrame.columns]
+                   cellBarcodes[barcode].genotype for barcode in dataFrame.columns]
     # sanity check
     for i,item in enumerate(newColNames):
         assert item.split('_')[0] == dataFrame.columns[i]
