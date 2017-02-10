@@ -24,13 +24,9 @@ for cbc,cell in cell_barcodes.items():
             umi_fracs.append(float(count)/totalReads)
             umi_reads.append(count)
 
-umi_fracs = np.log(umi_fracs)
-umi_reads = np.log(umi_reads)
+umi_reads = np.log10(umi_reads)
 
-sns.distplot(umi_fracs, kde = False)
-plt.savefig('umi_fracs.png', bbox_inches = 'tight')
-plt.clf()
-
-sns.distplot(umi_reads, kde = False)
-plt.savefig('umi_reads.png', bbox_inches = 'tight')
+plt.hist(umi_reads, bins = 40, log = False)
+plt.xlabel('log(reads per UMI)')
+plt.savefig('umi_reads.pdf', bbox_inches = 'tight')
 plt.clf()
