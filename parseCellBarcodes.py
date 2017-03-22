@@ -19,6 +19,7 @@ cellBarcodes = sc.getCellBarcodes(bamFile, coreCells, edit_dist = cbc_edit_dist)
 for cbc,cell in cellBarcodes.items():
     cellBarcodes[cbc].collapseMolTags(cbc_edit_dist)
 
+barcodeFile = bamFile.replace('.sorted.tagged.bam', '_cell_barcodes.pickle')
 with open(barcodeFile, 'w') as f:
     cp.dump(cellBarcodes,f)
 
