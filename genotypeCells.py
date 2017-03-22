@@ -9,12 +9,15 @@ barcodeFile = sys.argv[2]
 barcodeToGeneFile = sys.argv[3]
 edit_dist = int(sys.argv[4])
 singleFrac = float(sys.argv[5])
-minUMIreads = int(sys.argv[6])
+dualFrac = float(sys.argv[6])
+tripFrac = float(sys.argv[7])
+minUMIreads = int(sys.argv[8])
 
 with open(barcodeFile) as f:
     cellBarcodes = cp.load(f)
 
 cellBarcodes = callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile,
                             edit_dist = edit_dist, singleFrac = singleFrac,
+                            dualFrac = dualFrac, tripFrac = tripFrac, 
                             minUMIreads = minUMIreads)
 

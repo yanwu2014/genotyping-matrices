@@ -23,8 +23,8 @@ def main():
 # Input: dataFrame, cellBarcodes object, barcode to gene mapping
 # Output: genotyped dataframe
 def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
-                 singleFrac = 0.9, minUMIreads = 5, minReads = 20, minUMIs = 3,
-                 dualFrac = 0.4):
+                 singleFrac = 0.9, dualFrac = 0.4, tripFrac = 0.3, minUMIreads = 5, 
+                 minReads = 20, minUMIs = 3):
     
     with open(barcodeToGeneFile) as f:
         barcodeToGene = cp.load(f)
@@ -37,7 +37,7 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
         else:
             cellBarcodes[cell_bc].countBarcodes(minReads = minUMIreads)
             cellBarcodes[cell_bc].callBarcode(barcodeToGene, minReads, minUMIs, singleFrac,
-                                              dualFrac)
+                                              dualFrac, tripFrac)
     
     cells = 0
     empty = 0
@@ -45,6 +45,7 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
     nocalls = 0
     singles = 0
     duals = 0
+    triples = 0
 
     log_file = open('barcode_calling_log.txt','w')
     for cbc,cell in sorted(cellBarcodes.items(),key = lambda x: x[1].transcripts, reverse=True):
@@ -55,6 +56,7 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
         elif cell.genotype == 'noGRNA': empty += 1
         elif cell.type == 'single': singles += 1   
         elif cell.type == 'dual': duals += 1
+        elif cell.type == 'triple': triples += 1
 
         if cell.genotype != 'noGRNA':
             _writeCellStats(cell, cbc, log_file)

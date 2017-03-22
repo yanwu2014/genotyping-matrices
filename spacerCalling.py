@@ -70,7 +70,7 @@ class Cell:
     # Takes the read/umi counts calculated from countBarcodes, the barcode to gene
     # dictionary, and attempts to genotype each cell with a minimum read, UMI, and read
     # fraction threshold
-    def callBarcode(self, barcodeToGene, minReads, minUMIs, singleFrac, dualFrac):
+    def callBarcode(self, barcodeToGene, minReads, minUMIs, singleFrac, dualFrac, tripFrac):
         candidates = []
         for gbc in self.gbcReadCounts:
             if self.gbcReadCounts[gbc] >= minReads and self.gbcUMICounts[gbc] > minUMIs:
@@ -86,11 +86,14 @@ class Cell:
                                   for gbc in candidates}
             singleGBC = False
             dualGBC = []
+            tripGBC = []
             for gbc in candidates:
                 if candidateReadFracs[gbc] >= singleFrac:
                     singleGBC = gbc
                 elif candidateReadFracs[gbc] >= dualFrac:
-                    dualGBC.append(gbc)   
+                    dualGBC.append(gbc) 
+                elif candidateReadFracs[gbc] >= tripFrac:
+                    tripGBC.append(gbc)
 
             if singleGBC:
                 libGBC = exactExists(barcodeToGene, singleGBC, edit_dist = 1)
@@ -111,6 +114,20 @@ class Cell:
                 if len(duals) == 2:
                     self.type = 'dual'
                     self.genotype = barcodeToGene[duals[0]] + ',' + barcodeToGene[duals[1]]
+                else:
+                    self.type = 'noPlasmid'
+                    self.genotype = 'noPlasmid'
+            
+            elif len(tripGBC) == 3:
+                triples = []
+                for gbc in tripGBC:
+                    libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
+                    if libGBC and type(libGBC) == str:
+                        triples.append(libGBC)
+                if len(triples) == 3:
+                    self.type = 'triple'
+                    self.genotype = barcodeToGene[triples[0]] + ',' + barcodeToGene[triples[1]] + ',' + \
+                            barcodeToGene[triples[2]]
                 else:
                     self.type = 'noPlasmid'
                     self.genotype = 'noPlasmid'
