@@ -25,8 +25,14 @@ for cbc,cell in cell_barcodes.items():
             umi_reads.append(count)
 
 umi_reads = np.log10(umi_reads)
+umi_fracs = np.log10(umi_fracs)
 
-plt.hist(umi_reads, bins = 40, log = False)
-plt.xlabel('log(reads per UMI)')
-plt.savefig('umi_reads.pdf', bbox_inches = 'tight')
+plt.hist(umi_reads, bins = 80, log = True)
+plt.xlabel('log10(reads per UMI)')
+plt.savefig('umi_reads.png', bbox_inches = 'tight')
+plt.clf()
+
+plt.hist(umi_fracs, bins = 80, log = True)
+plt.xlabel('log10(read fraction per UMI)')
+plt.savefig('umi_fracs.png', bbox_inches = 'tight')
 plt.clf()
