@@ -58,9 +58,14 @@ class Cell:
 
     # Input: self.molTags, edit distance, minReadFrac
     # Output: count guide barcodes and store in barcodeCounts
-    def countBarcodes(self, minReads):
+    def countBarcodes(self, minReads = None, minFrac = None):
         guideTags = self.molTags
-        guideTags = _thresholdBarcodes(guideTags, minReads)
+        if minReads:
+            guideTags = _thresholdBarcodes(guideTags, minReads)
+        elif minFrac:
+            minReads = round(minFrac*self.gbc_reads)
+            guideTags = _thresholdBarcodes(guideTags, minReads)
+
         for gbc, molTagCounts in guideTags.items(): 
             self.gbcReadCounts[gbc] = sum(molTagCounts.values())
             self.gbcUMICounts[gbc] = len(molTagCounts)
