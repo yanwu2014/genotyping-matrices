@@ -75,92 +75,35 @@ class Cell:
     # Takes the read/umi counts calculated from countBarcodes, the barcode to gene
     # dictionary, and attempts to genotype each cell with a minimum read, UMI, and read
     # fraction threshold
-    def callBarcode(self, barcodeToGene, minReads, minUMIs, singleFrac, dualFrac, tripFrac):
+    def callBarcode(self, barcodeToGene, readThresh, umiThresh, minReads = 5, minUMIs = 2):
         candidates = []
-        for gbc in self.gbcReadCounts:
-            if self.gbcReadCounts[gbc] >= minReads and self.gbcUMICounts[gbc] > minUMIs:
+        totalReads = np.sum(self.gbcReadCounts.values())
+        totalUMIs = np.sum(self.gbcUMICounts.values())
+        for gbc,reads in self.gbcReadCounts.items():
+            umis = self.gbcUMICounts[gbc]
+            if float(reads)/totalReads > readThresh and float(umis)/totalUMIs > umiThresh and \
+                    reads >= minReads and umis >= minUMIs:
                 candidates.append(gbc)
-
+         
         if len(candidates) == 0:
             self.type = 'noGRNA'
-            self.genotype = 'noGRNA'
-        
+            self.genotype = ''
+
         else:
-            totalReads = sum(self.gbcReadCounts.values())
-            candidateReadFracs = {gbc:float(self.gbcReadCounts[gbc])/totalReads \
-                                  for gbc in candidates}
-            singleGBC = False
-            dualGBC = []
-            tripGBC = []
+            genotypes = []
             for gbc in candidates:
-                if candidateReadFracs[gbc] >= singleFrac:
-                    singleGBC = gbc
-                elif candidateReadFracs[gbc] >= dualFrac:
-                    dualGBC.append(gbc) 
-                elif candidateReadFracs[gbc] >= tripFrac:
-                    tripGBC.append(gbc)
-
-            if singleGBC:
-                libGBC = exactExists(barcodeToGene, singleGBC, edit_dist = 1)
+                libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
                 if libGBC and type(libGBC) == str:
-                    self.type = 'single'
-                    self.genotype = barcodeToGene[libGBC]
-                else:
+                    genotypes.append(barcodeToGene[libGBC])
+                     
+                if len(genotypes) == 0:
                     self.type = 'noPlasmid'
-                    self.genotype = 'noPlasmid'
-            
-            elif len(dualGBC) == 2 and (candidateReadFracs[dualGBC[0]] + \
-                    candidateReadFracs[dualGBC[1]] > singleFrac):
-                duals = []
-                for gbc in dualGBC:
-                    libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
-                    if libGBC and type(libGBC) == str:
-                        duals.append(libGBC)
-                if len(duals) == 2:
-                    self.type = 'dual'
-                    self.genotype = barcodeToGene[duals[0]] + ',' + barcodeToGene[duals[1]]
+                    self.genotype = ''
                 else:
-                    self.type = 'noPlasmid'
-                    self.genotype = 'noPlasmid'
-            
-            elif len(tripGBC) == 3:
-                triples = []
-                for gbc in tripGBC:
-                    libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
-                    if libGBC and type(libGBC) == str:
-                        triples.append(libGBC)
-                if len(triples) == 3:
-                    self.type = 'triple'
-                    self.genotype = barcodeToGene[triples[0]] + ',' + barcodeToGene[triples[1]] + ',' + \
-                            barcodeToGene[triples[2]]
-                else:
-                    self.type = 'noPlasmid'
-                    self.genotype = 'noPlasmid'
+                    self.type = 'usable'
+                    self.genotype = ",".join(genotypes)
 
-            else:
-                self.type = 'noCall'
-                self.genotype = 'noCall'
             
-            
-# Input: DropSeq datafrmae output, cellBarcode output from getCellBarcodes()
-# Output: dataframe with genotypes appended after cell names
-def callGenotype(dataFrame, cellBarcodes):
-    dataFrameCells = set(dataFrame.columns)
-    cellKeys = [key for key in cellBarcodes.keys() if key in dataFrameCells]
-    
-    dataFrame = dataFrame[cellKeys]
-    newColNames = [barcode + '_' + cellBarcodes[barcode].type + '_' + \
-                   cellBarcodes[barcode].genotype for barcode in dataFrame.columns]
-    # sanity check
-    for i,item in enumerate(newColNames):
-        assert item.split('_')[0] == dataFrame.columns[i]
-
-    dataFrame.columns = newColNames
-    cellsToKeep = [name for name in newColNames if name.split('_')[1] == 'single']
-    dataFrame = dataFrame[cellsToKeep]
-    
-    return dataFrame
-
 # Input: mapped & corrected BAM file from DropSeq, barcodeToSpacer mapping dict, 
 #        cell readcount file from DropSeq, number of desired core barcodes
 # Output: dict with cell barcodes as keys, Cell objects as vals 

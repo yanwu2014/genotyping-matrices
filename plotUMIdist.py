@@ -14,25 +14,27 @@ import spacerCalling as sc
 with open(sys.argv[1]) as f:
     cell_barcodes = cp.load(f)
 
-umi_reads = []
+for k in cell_barcodes:
+    cell_barcodes[k].countBarcodes(minFrac = 0)
+
+read_fracs = []
 umi_fracs = []
-for cbc,cell in cell_barcodes.items():
-    molTags = cell.molTags
-    totalReads = cell.gbc_reads 
-    for gbc,umis in molTags.items():
-        for umi,count in umis.items():
-            umi_fracs.append(float(count)/totalReads)
-            umi_reads.append(count)
 
-umi_reads = np.log10(umi_reads)
-umi_fracs = np.log10(umi_fracs)
+for k,c in cell_barcodes.items():
+    totalReads = np.sum(c.gbcReadCounts.values())
+    totalUMIs = np.sum(c.gbcUMICounts.values())
+    for gbc,reads in c.gbcReadCounts.items():
+        umis = c.gbcUMICounts[gbc]
+        read_fracs.append(float(reads)/totalReads)
+        umi_fracs.append(float(umis)/totalUMIs)
 
-plt.hist(umi_reads, bins = 80, log = True)
-plt.xlabel('log10(reads per UMI)')
-plt.savefig('umi_reads.png', bbox_inches = 'tight')
+read_fracs = np.array(read_fracs)
+umi_fracs = np.array(umi_fracs)
+
+sns.jointplot(x = read_fracs, y = umi_fracs, kind = 'hex', bins = 'log', gridsize = 25,
+              stat_func = None)
+
+fig_name = sys.argv[1].replace('_cell_barcodes.pickle', '_umi_vs_read_frac.png')
+plt.savefig(fig_name, bbox_inches = 'tight')
 plt.clf()
 
-plt.hist(umi_fracs, bins = 80, log = True)
-plt.xlabel('log10(read fraction per UMI)')
-plt.savefig('umi_fracs.png', bbox_inches = 'tight')
-plt.clf()
