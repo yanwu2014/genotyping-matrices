@@ -13,7 +13,7 @@ import gzip
 import pysam as ps
 import spacerCalling as sc
 from itertools import islice
-from collections import defaultdict
+from collections import defaultdict,Counter
 import subprocess as sp
 
 def main():
@@ -22,60 +22,59 @@ def main():
    
 # Input: dataFrame, cellBarcodes object, barcode to gene mapping
 # Output: genotyped dataframe
-def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, edit_dist = 1,
-                 singleFrac = 0.9, dualFrac = 0.4, tripFrac = 0.3, minUMIreads = 5, 
-                 minReads = 20, minUMIs = 3):
+def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, readThresh,
+                 umiThresh, edit_dist = 1, minUMIFrac = 0.0, minGBCreads = 5,
+                 minGBCumis = 2):
     
     with open(barcodeToGeneFile) as f:
         barcodeToGene = cp.load(f)
         
-    for cell_bc,cell_obj in cellBarcodes.items():
-        # Filter out cell barcodes that have too few gRNA reads
-        if cell_obj.gbc_reads < minReads:
-            cellBarcodes[cell_bc].type = 'noGRNA'
-            cellBarcodes[cell_bc].genotype = 'noGRNA'
+    for cell_bc in cellBarcodes:
+        cellBarcodes[cell_bc].countBarcodes(minFrac = minUMIFrac)
+        cellBarcodes[cell_bc].callBarcode(barcodeToGene, readThresh, umiThresh,
+                                          minGBCreads, minGBCumis)
+    
+    noPlasmids = 0
+    gbc_dist = Counter()
+    for cell in cellBarcodes.values():
+        if cell.type == 'usable':
+            gbc_dist[len(cell.genotype.split(','))] += 1
+        elif cell.type == 'noGRNA':
+            gbc_dist[0] += 1
         else:
-            cellBarcodes[cell_bc].countBarcodes(minReads = minUMIreads)
-            cellBarcodes[cell_bc].callBarcode(barcodeToGene, minReads, minUMIs, singleFrac,
-                                              dualFrac, tripFrac)
-    
-    cells = 0
-    empty = 0
-    noPlasmid = 0
-    nocalls = 0
-    singles = 0
-    duals = 0
-    triples = 0
+            noPlasmids += 1
 
-    log_file = open('barcode_calling_log.txt','w')
-    for cbc,cell in sorted(cellBarcodes.items(),key = lambda x: x[1].transcripts, reverse=True):
-        cells += 1
-        
-        if cell.genotype == 'noPlasmid': noPlasmid += 1
-        elif cell.genotype == 'noCall': nocalls += 1
-        elif cell.genotype == 'noGRNA': empty += 1
-        elif cell.type == 'single': singles += 1   
-        elif cell.type == 'dual': duals += 1
-        elif cell.type == 'triple': triples += 1
-
-        if cell.genotype != 'noGRNA':
-            _writeCellStats(cell, cbc, log_file)
-    
-    log_file.close()
-    
     df = pd.read_csv(dataFrameFile, sep = '\t', header = 0, index_col = 0)
-    genotyped_df = sc.callGenotype(df, cellBarcodes)
+    genotyped_df = callGenotype(df, cellBarcodes)
     name = dataFrameFile.replace('.tsv','.genotyped.tsv')
     genotyped_df.to_csv(name, sep = '\t')
 
-    print 'Total_Cells\t' + str(cells)
-    print 'No_gRNA\t' + str(empty)
-    print 'No_Call\t' + str(nocalls)
-    print 'No_Plasmid\t' + str(noPlasmid)
-    print 'Singles\t' + str(singles)
-    print 'Duals\t' + str(duals)
+    print 'Total_Cells\t' + str(len(cellBarcodes))
+    print 'No_Plasmid\t' + str(noPlasmids)
+    
+    with open('moi_distribution.txt', 'w') as f:
+        for k,v in gbc_dist.items():
+            f.write(str(k) + '\t' + str(v) + '\n')
     
     return cellBarcodes
+
+
+# Input: DropSeq dataframe output, cellBarcode output from getCellBarcodes()
+# Output: dataframe with genotypes appended after cell names
+def callGenotype(dataFrame, cellBarcodes):
+    dataFrameCells = set(dataFrame.columns)
+    cellKeys = [key for key,cell in cellBarcodes.items() if key in dataFrameCells \
+                and cell.type == 'usable']
+    
+    dataFrame = dataFrame[cellKeys]
+    newColNames = [barcode + '_' + cellBarcodes[barcode].type + '_' + \
+                   cellBarcodes[barcode].genotype for barcode in dataFrame.columns]
+    # sanity check
+    for i,item in enumerate(newColNames):
+        assert item.split('_')[0] == dataFrame.columns[i]
+
+    dataFrame.columns = newColNames
+    return dataFrame
 
 
 # Input: data frame, desired edit distance to be collapsed

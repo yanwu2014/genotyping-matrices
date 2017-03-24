@@ -15,6 +15,7 @@ from itertools import islice
 from operator import itemgetter
 from dedupBarcodes import *
 import distance
+import numpy as np
 import pandas as pd
 
 BARCODE_LENGTH = 12
@@ -28,8 +29,8 @@ class Cell:
         self.transcripts = 0 # Number of cDNA UMIs
         self.gbc_reads = 0 # Number of gRNA reads
         
-        self.type = None # Type: single, double, no-call, no-gRNA, no-Plasmid
-        self.genotype = None # Genotype: e.g. HDAC2-1
+        self.type = None # Type: no-Plasmid, no-gRNA, usable
+        self.genotype = None # Genotype: e.g. HDAC2-1,HSP90AA1-1
         
         self.cellTag = cellTag # Cell Barcode
         self.molTags = defaultdict(Counter) # Barcode - UMI - ReadCount dict
@@ -73,7 +74,7 @@ class Cell:
         self.molTags = guideTags
     
     # Takes the read/umi counts calculated from countBarcodes, the barcode to gene
-    # dictionary, and attempts to genotype each cell with a minimum read, UMI, and read
+    # dictionary, and attempts to genotype each cell with a minimum read and UMI
     # fraction threshold
     def callBarcode(self, barcodeToGene, readThresh, umiThresh, minReads = 5, minUMIs = 2):
         candidates = []
