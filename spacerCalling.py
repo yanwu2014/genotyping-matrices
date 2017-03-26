@@ -102,7 +102,7 @@ class Cell:
                     self.genotype = ''
                 else:
                     self.type = 'usable'
-                    self.genotype = ",".join(genotypes)
+                    self.genotype = genotypes
 
             
 # Input: mapped & corrected BAM file from DropSeq, barcodeToSpacer mapping dict, 

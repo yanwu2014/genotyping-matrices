@@ -38,43 +38,32 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, readThresh,
     gbc_dist = Counter()
     for cell in cellBarcodes.values():
         if cell.type == 'usable':
-            gbc_dist[len(cell.genotype.split(','))] += 1
+            gbc_dist[len(cell.genotype)] += 1
         elif cell.type == 'noGRNA':
             gbc_dist[0] += 1
         else:
             noPlasmids += 1
 
-    df = pd.read_csv(dataFrameFile, sep = '\t', header = 0, index_col = 0)
-    genotyped_df = callGenotype(df, cellBarcodes)
-    name = dataFrameFile.replace('.tsv','.genotyped.tsv')
-    genotyped_df.to_csv(name, sep = '\t')
+    outFilePrefix = dataFrameFile.replace('.counts.tsv','') 
+    genotype_dict = defaultdict(list)
+    for cell_bc,cell_obj in cellBarcodes.items():
+        if cell_obj.type == 'usable':
+            for genotype in cell_obj.genotype:
+                genotype_dict[genotype].append(cell_bc)
+
+    with open(outFilePrefix + '_pheno_dict.csv', 'w') as f:
+        for genotype,cells in genotype_dict.items():
+            outLine = genotype + ',\"' + ",".join(cells) + '\"' + '\n'
+            f.write(outLine)
 
     print 'Total_Cells\t' + str(len(cellBarcodes))
     print 'No_Plasmid\t' + str(noPlasmids)
     
-    with open('moi_distribution.txt', 'w') as f:
+    with open(outFilePrefix + '_moi_distribution.txt', 'w') as f:
         for k,v in gbc_dist.items():
             f.write(str(k) + '\t' + str(v) + '\n')
     
     return cellBarcodes
-
-
-# Input: DropSeq dataframe output, cellBarcode output from getCellBarcodes()
-# Output: dataframe with genotypes appended after cell names
-def callGenotype(dataFrame, cellBarcodes):
-    dataFrameCells = set(dataFrame.columns)
-    cellKeys = [key for key,cell in cellBarcodes.items() if key in dataFrameCells \
-                and cell.type == 'usable']
-    
-    dataFrame = dataFrame[cellKeys]
-    newColNames = [barcode + '_' + cellBarcodes[barcode].type + '_' + \
-                   cellBarcodes[barcode].genotype for barcode in dataFrame.columns]
-    # sanity check
-    for i,item in enumerate(newColNames):
-        assert item.split('_')[0] == dataFrame.columns[i]
-
-    dataFrame.columns = newColNames
-    return dataFrame
 
 
 # Input: data frame, desired edit distance to be collapsed
