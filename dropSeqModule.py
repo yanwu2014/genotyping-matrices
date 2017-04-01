@@ -23,14 +23,14 @@ def main():
 # Input: dataFrame, cellBarcodes object, barcode to gene mapping
 # Output: genotyped dataframe
 def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, readThresh,
-                 umiThresh, edit_dist = 1, minUMIFrac = 0.0, minGBCreads = 5,
-                 minGBCumis = 2):
+                 umiThresh, edit_dist = 1, minUMIFrac = 0.0, minUMIReads = 0, 
+                 minGBCreads = 5, minGBCumis = 2):
     
     with open(barcodeToGeneFile) as f:
         barcodeToGene = cp.load(f)
         
     for cell_bc in cellBarcodes:
-        cellBarcodes[cell_bc].countBarcodes(minFrac = minUMIFrac)
+        cellBarcodes[cell_bc].countBarcodes(minReads = minUMIReads)
         cellBarcodes[cell_bc].callBarcode(barcodeToGene, readThresh, umiThresh,
                                           minGBCreads, minGBCumis)
     
@@ -58,7 +58,9 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, readThresh,
 
     print 'Total_Cells\t' + str(len(cellBarcodes))
     print 'No_Plasmid\t' + str(noPlasmids)
-    
+    for k,v in gbc_dist.items():
+        print str(k) + "\t" + str(v)
+
     with open(outFilePrefix + '_moi_distribution.txt', 'w') as f:
         for k,v in gbc_dist.items():
             f.write(str(k) + '\t' + str(v) + '\n')
@@ -277,7 +279,7 @@ def speciesMixing(humanFile, mouseFile, nBarcodes = 50):
     print 'Number human = ' + str(len(humanCells))
     print 'Number mouse = ' + str(len(mouseCells))
     print 'Number of barcodes: ' + str(len(combinedTable.index))
-    
+
     combinedTable = combinedTable.fillna(0)
     
     humanCells = sorted(humanCells.items(),key=lambda x: x[1],reverse=True)
