@@ -122,10 +122,10 @@ def getCellBarcodes(bamFile, coreCells, edit_dist = 1):
         if guideBarcode:
             nreads += 1
             if cellTag in cellBarcodes:
-                cellBarcodes[cellTag].addMolTag(molTag,guideBarcode)
+                cellBarcodes[cellTag].addMolTag(molTag, guideBarcode)
             else:
                 cell = Cell(cellTag)
-                cell.addMolTag(molTag,guideBarcode)
+                cell.addMolTag(molTag, guideBarcode)
                 cellBarcodes[cellTag] = cell 
             
             if (nreads % 1000000) == 0: print 'Reads parsed = ' + str(nreads)
@@ -206,7 +206,7 @@ def _getBarcode(read):
     bcStart = list(approxHammingSearch('CCGAGTCGGTGC',read.query_sequence))
     if len(bcStart) < 1: 
         return False
-    left_pointer = argmin(bcStart) + 12
+    left_pointer = argmin(bcStart) + BARCODE_LENGTH
 
     bcEnd = list(approxHammingSearch('TATGA',read.query_sequence))
     if len(bcEnd) < 1:
