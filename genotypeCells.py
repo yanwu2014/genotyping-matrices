@@ -11,11 +11,11 @@ barcodeToGeneFile = sys.argv[3]
 readThreshFrac = float(sys.argv[4])
 umiThreshFrac = float(sys.argv[5])
 
-minUMIReads = int(sys.argv[6])
+minUMIFrac = int(sys.argv[6])
 
 with open(barcodeFile) as f:
     cellBarcodes = cp.load(f)
 
 cellBarcodes = callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, readThreshFrac,
-                            umiThreshFrac, minUMIReads = minUMIReads)
+                            umiThreshFrac, minUMIFrac = minUMIFrac)
 
