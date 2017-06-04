@@ -7,7 +7,6 @@ library(methods)
 sample_path <- commandArgs(trailingOnly = T)[[1]]
 
 matrix_path <- paste(sample_path,'/outs/filtered_gene_bc_matrices_mex/GRCh38/', sep = '')
-print(matrix_path)
 out_file_name <- paste(sample_path, '.counts.tsv', sep = '')
 
 # Load matrix
@@ -19,6 +18,4 @@ dup <- duplicated(barcodes) | duplicated(barcodes, fromLast = T)
 out_mat <- out_mat[, which(!dup)]
 
 print(dim(out_mat))
-print(colnames(out_mat))
-
 write.table(out_mat, file = out_file_name, sep = '\t')
