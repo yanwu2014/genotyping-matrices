@@ -12,6 +12,12 @@ out_file_name <- paste(sample_path, '.counts.tsv', sep = '')
 
 # Load matrix
 out_mat <- as.matrix(Read10X(matrix_path))
+
+# Remove cells with duplicate barcodes
+barcodes <- sapply(colnames(out_mat), function(x) strsplit(x, split = "-")[[1]][[1]])
+dup <- duplicated(barcodes) | duplicated(barcodes, fromLast = T)
+out_mat <- out_mat[, which(!dup)]
+
 print(dim(out_mat))
 print(colnames(out_mat))
 
