@@ -13,6 +13,13 @@ cbc_edit_dist = int(sys.argv[3]) # Edit distance between cells
 gbc_edit_dist = 1
 
 df = pd.read_csv(dataFrameFile, sep = '\t', header = 0, index_col = 0)
+print df.columns[1:10]
+
+# Strip batch ids
+cell_barcodes = [x.split("-")[0] for x in df.columns]
+df.columns = cell_barcodes
+
+# Get cell names and total UMIs
 coreCells = df.sum(0).to_dict()
 
 cellBarcodes = sc.getCellBarcodes(bamFile, coreCells, edit_dist = cbc_edit_dist)
