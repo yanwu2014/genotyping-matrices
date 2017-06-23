@@ -12,7 +12,8 @@ import seaborn as sns
 import spacerCalling as sc
 
 cell_barcodes_file = sys.argv[1]
-minUMIFrac = float(sys.argv[2])
+minThresh = float(sys.argv[2])
+
 
 with open(sys.argv[1]) as f:
     cell_barcodes = cp.load(f)
@@ -26,7 +27,11 @@ for k,c in cell_barcodes.items():
             if not umi in umis:
                 umi_reads.append(counts)
             umis.add(umi)
-    cell_barcodes[k].countBarcodes(minFrac = minUMIFrac)
+    if minThresh > 1.0:
+        minReads = int(minThresh)
+        cell_barcodes[k].countBarcodes(minReads = minReads)
+    else:
+        cell_barcodes[k].countBarcodes(minFrac = minThresh)
 
 read_fracs = []
 umi_fracs = []

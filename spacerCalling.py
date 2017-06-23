@@ -77,32 +77,37 @@ class Cell:
     # dictionary, and attempts to genotype each cell with a minimum read and UMI
     # fraction threshold
     def callBarcode(self, barcodeToGene, readThresh, umiThresh, minReads = 5, minUMIs = 2):
-        candidates = []
-        totalReads = np.sum(self.gbcReadCounts.values())
-        totalUMIs = np.sum(self.gbcUMICounts.values())
-        for gbc,reads in self.gbcReadCounts.items():
-            umis = self.gbcUMICounts[gbc]
+        # Map each barcode to a guide RNA and count
+        guideReadCounts = Counter()
+        guideUMICounts = Counter()
+        for gbc in self.gbcReadCounts:
+            libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
+            if libGBC and type(libGBC) == str:
+                guide = barcodeToGene[libGBC]
+                guideReadCounts[guide] += self.gbcReadCounts[gbc]
+                guideUMICounts[guide] += self.gbcUMICounts[gbc]
+        
+        if len(guideReadCounts) == 0:
+            self.type = "noPlasmid"
+            self.genotype = ""
+        
+        genotypes = []
+        totalReads = np.sum(guideReadCounts.values())
+        totalUMIs = np.sum(guideUMICounts.values())
+        for guide in guideReadCounts:
+            reads = guideReadCounts[guide]
+            umis = guideUMICounts[guide]
             if float(reads)/totalReads > readThresh and float(umis)/totalUMIs > umiThresh and \
                     reads >= minReads and umis >= minUMIs:
-                candidates.append(gbc)
+                genotypes.append(guide)
          
-        if len(candidates) == 0:
+        if len(genotypes) == 0:
             self.type = 'noGRNA'
             self.genotype = ''
 
         else:
-            genotypes = []
-            for gbc in candidates:
-                libGBC = exactExists(barcodeToGene, gbc, edit_dist = 1)
-                if libGBC and type(libGBC) == str:
-                    genotypes.append(barcodeToGene[libGBC])
-                     
-                if len(genotypes) == 0:
-                    self.type = 'noPlasmid'
-                    self.genotype = ''
-                else:
-                    self.type = 'usable'
-                    self.genotype = genotypes
+            self.type = 'usable'
+            self.genotype = genotypes
 
             
 # Input: mapped & corrected BAM file from DropSeq, barcodeToSpacer mapping dict, 
