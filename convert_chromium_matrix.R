@@ -6,7 +6,7 @@ library(methods)
 # Human genome
 sample_path <- commandArgs(trailingOnly = T)[[1]]
 
-matrix_path <- paste(sample_path,'/outs/filtered_gene_bc_matrices_mex/GRCh38/', sep = '')
+matrix_path <- paste(sample_path,'/outs/filtered_gene_bc_matrices/GRCh38/', sep = '')
 out_file_name <- paste(sample_path, '.counts.tsv', sep = '')
 
 # Load matrix
