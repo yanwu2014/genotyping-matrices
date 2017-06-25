@@ -13,7 +13,6 @@ cbc_edit_dist = int(sys.argv[3]) # Edit distance between cells
 gbc_edit_dist = 1
 
 df = pd.read_csv(dataFrameFile, sep = '\t', header = 0, index_col = 0)
-print df.columns[1:10]
 
 # Strip batch ids
 cell_barcodes = [x.split("-")[0] for x in df.columns]
