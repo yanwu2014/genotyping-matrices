@@ -26,7 +26,7 @@ out.file <- options[[1]]
 combined.genotypes.list <- list()
 for (i in 2:length(options)) {
   j <- i - 1
-  genotypes.list <- read.genotypes(options[[j]])
+  genotypes.list <- read.genotypes(options[[i]])
   genotypes.list <- lapply(genotypes.list, function(cells) sapply(cells, function(x) paste(x, j, sep = "-")))
   for (g in names(genotypes.list)) {
     if (g %in% names(combined.genotypes.list)) {
