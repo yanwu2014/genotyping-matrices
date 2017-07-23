@@ -19,8 +19,10 @@ import numpy as np
 import pandas as pd
 
 BARCODE_LENGTH = 12
-BC_START_HANDLE = 'CCGAGTCGGTGC'
-BC_END_HANDLE = 'TATGA' 
+#BC_START_HANDLE = 'CCGAGTCGGTGC'
+#BC_END_HANDLE = 'TATGA' 
+BC_START_HANDLE = 'GGCTGTTACGCG'
+BC_END_HANDLE = ''
 
 cs = ClusterAndReducer()
 
