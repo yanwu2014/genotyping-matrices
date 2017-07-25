@@ -18,11 +18,11 @@ import distance
 import numpy as np
 import pandas as pd
 
-BARCODE_LENGTH = 12
+BARCODE_LENGTH = 20
 #BC_START_HANDLE = 'CCGAGTCGGTGC'
 #BC_END_HANDLE = 'TATGA' 
-BC_START_HANDLE = 'GGCTGTTACGCG'
-BC_END_HANDLE = ''
+#BC_START_HANDLE = 'GGCTGTTACGCG'
+BC_END_HANDLE = 'CTACTGACGG'
 
 cs = ClusterAndReducer()
 
@@ -213,18 +213,23 @@ def _getBarcode(read):
         return False
     
     # ensure that the sequence right before the barcode is what we expect
-    bcStart = list(approxHammingSearch(BC_START_HANDLE, read.query_sequence))
-    if len(bcStart) < 1: 
+    #bcStart = list(approxHammingSearch(BC_START_HANDLE, read.query_sequence))
+    #if len(bcStart) < 1: 
+    #    return False
+    #left_pointer = argmin(bcStart) + len(BC_START_HANDLE)
+    bcEnd = list(approxHammingSearch(BC_END_HANDLE, read.query_sequence))
+    if len(bcEnd) < 1: 
         return False
-    left_pointer = argmin(bcStart) + len(BC_START_HANDLE)
-    
-    if len(BC_END_HANDLE) > 1:
-        bcEnd = list(approxHammingSearch(BC_END_HANDLE, read.query_sequence))
-        if len(bcEnd) < 1:
-            return False
-        right_pointer = argmin(bcEnd)
-    else:
-        right_pointer = left_pointer + BARCODE_LENGTH
+    right_pointer = argmin(bcEnd)
+    left_pointer = right_pointer - BARCODE_LENGTH
+
+    #if len(BC_END_HANDLE) > 1:
+    #    bcEnd = list(approxHammingSearch(BC_END_HANDLE, read.query_sequence))
+    #    if len(bcEnd) < 1:
+    #        return False
+    #    right_pointer = argmin(bcEnd)
+    #else:
+    #    right_pointer = left_pointer + BARCODE_LENGTH
 
     barcode = read.query_sequence[left_pointer:right_pointer]
 
