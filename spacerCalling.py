@@ -21,8 +21,8 @@ import pandas as pd
 BARCODE_LENGTH = 20
 #BC_START_HANDLE = 'CCGAGTCGGTGC'
 #BC_END_HANDLE = 'TATGA' 
-#BC_START_HANDLE = 'GGCTGTTACGCG'
-BC_END_HANDLE = 'CTACTGACGG'
+BC_START_HANDLE = 'GGCTGTTACGCG'
+BC_END_HANDLE = 'CTACTGAC'
 
 cs = ClusterAndReducer()
 
@@ -209,27 +209,19 @@ def _getTag(read,tagName):
 # Output: gRNA barcode if it exists, False otherwise
 def _getBarcode(read):
     # Make sure read maps to end of reference (right before barcode)
-    if len(read.query_sequence) < 65:
-        return False
+    #if len(read.query_sequence) < 65:
+    #    return False
     
     # ensure that the sequence right before the barcode is what we expect
-    #bcStart = list(approxHammingSearch(BC_START_HANDLE, read.query_sequence))
-    #if len(bcStart) < 1: 
-    #    return False
-    #left_pointer = argmin(bcStart) + len(BC_START_HANDLE)
+    bcStart = list(approxHammingSearch(BC_START_HANDLE, read.query_sequence))
+    if len(bcStart) < 1: 
+        return False
+    left_pointer = argmin(bcStart) + len(BC_START_HANDLE)
+    
     bcEnd = list(approxHammingSearch(BC_END_HANDLE, read.query_sequence))
     if len(bcEnd) < 1: 
         return False
     right_pointer = argmin(bcEnd)
-    left_pointer = right_pointer - BARCODE_LENGTH
-
-    #if len(BC_END_HANDLE) > 1:
-    #    bcEnd = list(approxHammingSearch(BC_END_HANDLE, read.query_sequence))
-    #    if len(bcEnd) < 1:
-    #        return False
-    #    right_pointer = argmin(bcEnd)
-    #else:
-    #    right_pointer = left_pointer + BARCODE_LENGTH
 
     barcode = read.query_sequence[left_pointer:right_pointer]
 
@@ -238,7 +230,7 @@ def _getBarcode(read):
         return False
 
     quals = read.query_qualities[left_pointer:right_pointer]
-    if belowQual(quals,20) > 1:
+    if belowQual(quals, 20) > 1:
         return False
 
     return barcode
