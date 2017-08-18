@@ -120,11 +120,11 @@ class Cell:
 # Output: dict with cell barcodes as keys, Cell objects as vals 
 def getCellBarcodes(bamFile, coreCells, edit_dist = 1):
     
-    bamFile = ps.AlignmentFile(bamFile,'rb') # load bam file
+    bamFile = ps.AlignmentFile(bamFile, 'rb', check_sq=False) # load bam file
     
     cellBarcodes = {} 
     nreads = 0
-    for read in bamFile.fetch('HUMAN_MOUSE_chrGRNA'):
+    for read in bamFile.fetch(until_eof=True):
         molTag = _getTag(read,'XM')
         cellTag = _getTag(read,'XC')
         
