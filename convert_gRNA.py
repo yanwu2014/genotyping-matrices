@@ -22,25 +22,30 @@ def tag_reads(read1_fastq_file, read2_bam_file):
     f_in = ps.AlignmentFile(read2_bam_file, 'rb', check_sq=False)
     f_out = ps.AlignmentFile(read2_bam_file.replace('.bam','.tagged.bam'), 'wb',
                              template = f_in)
+    
+    i = 0
     for read in f_in.fetch(until_eof=True):
-        if read.query_name in cellTags and read.query_name in molTags:
-            read.set_tag('XM',molTags[read.query_name])
-            read.set_tag('XC',cellTags[read.query_name])
-            f_out.write(read)
+        #if read.query_name in cellTags and read.query_name in molTags:
+        if str.strip(read.query_name) != str.strip(cellTags[i][0]):
+            raise ValueError("Read names not aligned")
+        read.set_tag('XM', molTags[i][1])
+        read.set_tag('XC', cellTags[i][1])
+        i += 1
+        f_out.write(read)
 
     f_in.close()
     f_out.close()
 
 # Parse read file and extract sequence from start to end
 def get_tags(read_file, start, end):
-    celltags = {}
+    celltags = []
     fh = ps.FastxFile(read_file)
     for read in fh:
         tag = read.sequence[start:end]
-        quals = list(read.quality)[start:end]
-        quals = map(lambda x: ord(x) - 33, quals)
+        #quals = list(read.quality)[start:end]
+        #quals = map(lambda x: ord(x) - 33, quals)
         #if belowQual(quals,10) < 2:
-        celltags[read.name] = tag
+        celltags.append((read.name,tag))
     fh.close()
     return celltags
 
