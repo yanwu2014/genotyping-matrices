@@ -18,12 +18,6 @@ import distance
 import numpy as np
 import pandas as pd
 
-BARCODE_LENGTH = 20
-#BC_START_HANDLE = 'CCGAGTCGGTGC'
-#BC_END_HANDLE = 'TATGA' 
-BC_START_HANDLE = 'GGCTGTTACGCG'
-BC_END_HANDLE = 'CTACTGAC'
-
 cs = ClusterAndReducer()
 
 # Cell class
@@ -118,7 +112,8 @@ class Cell:
 # Input: mapped & corrected BAM file from DropSeq, barcodeToSpacer mapping dict, 
 #        cell readcount file from DropSeq, number of desired core barcodes
 # Output: dict with cell barcodes as keys, Cell objects as vals 
-def getCellBarcodes(bamFile, coreCells, edit_dist = 1):
+def getCellBarcodes(bamFile, coreCells, barcode_length, bc_start_handle,
+                    bc_end_handle, edit_dist = 1):
     
     bamFile = ps.AlignmentFile(bamFile, 'rb', check_sq=False) # load bam file
     
@@ -128,7 +123,7 @@ def getCellBarcodes(bamFile, coreCells, edit_dist = 1):
         molTag = _getTag(read,'XM')
         cellTag = _getTag(read,'XC')
         
-        guideBarcode = _getBarcode(read)
+        guideBarcode = _getBarcode(read, barcode_length, bc_start_handle, bc_end_handle)
         if guideBarcode:
             nreads += 1
             if cellTag in cellBarcodes:
@@ -207,18 +202,18 @@ def _getTag(read,tagName):
                     
 # Input: pysam AlignedSegment object
 # Output: gRNA barcode if it exists, False otherwise
-def _getBarcode(read):
+def _getBarcode(read, barcode_length, bc_start_handle, bc_end_handle):
     # Make sure read maps to end of reference (right before barcode)
     #if len(read.query_sequence) < 65:
     #    return False
     
     # ensure that the sequence right before the barcode is what we expect
-    bcStart = list(approxHammingSearch(BC_START_HANDLE, read.query_sequence))
+    bcStart = list(approxHammingSearch(bc_start_handle, read.query_sequence))
     if len(bcStart) < 1: 
         return False
-    left_pointer = argmin(bcStart) + len(BC_START_HANDLE)
+    left_pointer = argmin(bcStart) + len(bc_start_handle)
     
-    bcEnd = list(approxHammingSearch(BC_END_HANDLE, read.query_sequence))
+    bcEnd = list(approxHammingSearch(bc_end_handle, read.query_sequence))
     if len(bcEnd) < 1: 
         return False
     right_pointer = argmin(bcEnd)
@@ -226,7 +221,7 @@ def _getBarcode(read):
     barcode = read.query_sequence[left_pointer:right_pointer]
 
     # Ensure the read covers the entire barcode
-    if (len(barcode) < BARCODE_LENGTH - 1) or (len(barcode) > BARCODE_LENGTH):
+    if (len(barcode) < barcode_length - 1) or (len(barcode) > barcode_length + 1):
         return False
 
     quals = read.query_qualities[left_pointer:right_pointer]

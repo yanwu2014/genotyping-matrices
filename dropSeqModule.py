@@ -34,6 +34,7 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGeneFile, readThresh,
             cellBarcodes[cell_bc].countBarcodes(minFrac = minUMIFrac)
         else:
             cellBarcodes[cell_bc].countBarcodes(minReads = minUMIReads)
+        
         cellBarcodes[cell_bc].callBarcode(barcodeToGene, readThresh, umiThresh,
                                           minGBCreads, minGBCumis)
     
