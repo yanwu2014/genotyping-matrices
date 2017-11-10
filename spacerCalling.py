@@ -17,6 +17,8 @@ from dedupBarcodes import *
 import distance
 import numpy as np
 import pandas as pd
+import spacerCalling as sc
+import subprocess as sp
 
 cs = ClusterAndReducer()
 
@@ -108,7 +110,58 @@ class Cell:
             self.type = 'usable'
             self.genotype = genotypes
 
-            
+
+# Input: dataFrame, cellBarcodes object, barcode to gene mapping
+# Output: genotyped dataframe
+def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGene, readThresh,
+                 umiThresh, edit_dist = 1, minUMIFrac = 0.0, minUMIReads = 0, 
+                 minGBCreads = 5, minGBCumis = 2):
+    
+    for cell_bc in cellBarcodes:
+        if minUMIFrac > 0:
+            cellBarcodes[cell_bc].countBarcodes(minFrac = minUMIFrac)
+        else:
+            cellBarcodes[cell_bc].countBarcodes(minReads = minUMIReads)
+        
+        cellBarcodes[cell_bc].callBarcode(barcodeToGene, readThresh, umiThresh,
+                                          minGBCreads, minGBCumis)
+    
+    noPlasmids = 0
+    gbc_dist = Counter()
+    for cell in cellBarcodes.values():
+        if cell.type == 'usable':
+            gbc_dist[len(cell.genotype)] += 1
+        elif cell.type == 'noGRNA':
+            gbc_dist[0] += 1
+        else:
+            noPlasmids += 1
+
+    outFilePrefix = dataFrameFile.replace('.counts.tsv','') 
+    genotype_dict = defaultdict(list)
+    for cell_bc,cell_obj in cellBarcodes.items():
+        if cell_obj.type == 'usable':
+            for genotype in cell_obj.genotype:
+                genotype_dict[genotype].append(cell_bc)
+
+    with open(outFilePrefix + '_pheno_dict.csv', 'w') as f:
+        for genotype,cells in genotype_dict.items():
+            outLine = genotype + ',\"' + ",".join(cells) + '\"' + '\n'
+            f.write(outLine)
+
+    print 'Total_Cells\t' + str(len(cellBarcodes))
+    print 'No_Plasmid\t' + str(noPlasmids)
+    for k,v in gbc_dist.items():
+        print str(k) + "\t" + str(v)
+
+    with open(outFilePrefix + '_moi_distribution.txt', 'w') as f:
+        for k,v in gbc_dist.items():
+            f.write(str(k) + '\t' + str(v) + '\n')
+    
+    return cellBarcodes
+
+
+
+
 # Input: mapped & corrected BAM file from DropSeq, barcodeToSpacer mapping dict, 
 #        cell readcount file from DropSeq, number of desired core barcodes
 # Output: dict with cell barcodes as keys, Cell objects as vals 

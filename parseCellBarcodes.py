@@ -4,7 +4,6 @@ import sys
 import cPickle as cp
 import spacerCalling as sc
 import pandas as pd
-#import dropSeqModule as ds
 
 
 dataFrameFile = sys.argv[1]
