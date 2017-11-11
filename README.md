@@ -9,6 +9,6 @@ Required input:
 
 Usage (Replace filenames in brackets with the names of your files):
 1. Tag Read2 genotype reads with cell and molecule barcodes using convert_gRNA.py: `python convert_gRNA.py [read1_cell_molecule_barcodes].fastq [read2_genotype_barcodes].bam`
-2. Parse the cell barcodes with parseCellBarcodes.py. `python parseCellBarcodes.py [counts_matrix].tsv [read2_genotypes_barcodes].tagged.bam [barcode_length (integer)] [barcode_upstream_sequence] [barcode_downstream_sequence]`
-3. Plot UMI fraction vs Read fraction distribution to set appropriate cutoffs to filter chimeric reads. `python [read2_genotype_barcodes]_cell_barcodes.pickle [min_read_count_fraction]`
-4. Generate the genotype to cell dictionaries. 
+2. Parse the cell barcodes with parseCellBarcodes.py. `python parseCellBarcodes.py [counts_matrix].tsv [read2_genotype_barcodes].tagged.bam [barcode_length (integer)] [barcode_upstream_sequence] [barcode_downstream_sequence]`
+3. Plot UMI fraction vs Read fraction distribution to set appropriate cutoffs to filter chimeric reads. `python [read2_genotype_barcodes]_cell_barcodes.pickle [min_reads_per_umi]`
+4. Generate the genotype to cell dictionaries. `min_umi_fraction` and `min_read_fraction` are the cutoffs for the fraction of total UMIs and fraction of total reads, respectively, that a genotype barcode must have to be included in the genotypes dictionary. These cutoffs are to filter chimeric reads. A good range for the ORF overexpression barcodes tends to be from 0.1 to 0.25. Setting these cutoffs too high will eliminate dual and triple perturbations. `python genotypeCells.py [counts_matrix].tsv [read2_genotype_barcodes]_cell_barcodes.pickle [min_umi_fraction] [min_read_fraction] [min_reads_per_umi]`
