@@ -6,7 +6,7 @@ import spacerCalling as sc
 import pandas as pd
 
 
-dataFrameFile = sys.argv[1]
+cellBarcodesFile = sys.argv[1]
 bamFile = sys.argv[2]
 BARCODE_LENGTH = int(sys.argv[3])
 BC_START_HANDLE = sys.argv[4]
@@ -25,12 +25,11 @@ gbc_edit_dist = 1
 #BC_START_HANDLE = 'GGCTGTTACGCG'
 #BC_END_HANDLE = 'CTACTGAC'
 
-# Load scRNA-seq counts matrix
-df = pd.read_csv(dataFrameFile, sep = '\t', header = 0, index_col = 0)
-
-# Strip batch ids
-cell_barcodes = [x.split("-")[0] for x in df.columns]
-df.columns = cell_barcodes
+# Load scRNA-seq cell barcodes
+cell_barcodes = []
+with open(cellBarcodesFile) as f:
+    for line in f:
+        cell_barcodes.append(str.strip(line))
 
 # Get cell names and total UMIs
 coreCells = df.sum(0).to_dict()

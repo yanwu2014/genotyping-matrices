@@ -113,7 +113,7 @@ class Cell:
 
 # Input: dataFrame, cellBarcodes object, barcode to gene mapping
 # Output: genotyped dataframe
-def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGene, readThresh,
+def callBarcodes(cellBarcodes, barcodeToGene, readThresh,
                  umiThresh, edit_dist = 1, minUMIFrac = 0.0, minUMIReads = 0, 
                  minGBCreads = 5, minGBCumis = 2):
     
@@ -126,40 +126,15 @@ def callBarcodes(dataFrameFile, cellBarcodes, barcodeToGene, readThresh,
         cellBarcodes[cell_bc].callBarcode(barcodeToGene, readThresh, umiThresh,
                                           minGBCreads, minGBCumis)
     
-    noPlasmids = 0
-    gbc_dist = Counter()
-    for cell in cellBarcodes.values():
-        if cell.type == 'usable':
-            gbc_dist[len(cell.genotype)] += 1
-        elif cell.type == 'noGRNA':
-            gbc_dist[0] += 1
-        else:
-            noPlasmids += 1
-
-    outFilePrefix = dataFrameFile.replace('.counts.tsv','') 
     genotype_dict = defaultdict(list)
     for cell_bc,cell_obj in cellBarcodes.items():
         if cell_obj.type == 'usable':
             for genotype in cell_obj.genotype:
                 genotype_dict[genotype].append(cell_bc)
-
-    with open(outFilePrefix + '_pheno_dict.csv', 'w') as f:
-        for genotype,cells in genotype_dict.items():
-            outLine = genotype + ',\"' + ",".join(cells) + '\"' + '\n'
-            f.write(outLine)
-
-    print 'Total_Cells\t' + str(len(cellBarcodes))
-    print 'No_Plasmid\t' + str(noPlasmids)
-    for k,v in gbc_dist.items():
-        print str(k) + "\t" + str(v)
-
-    with open(outFilePrefix + '_moi_distribution.txt', 'w') as f:
-        for k,v in gbc_dist.items():
-            f.write(str(k) + '\t' + str(v) + '\n')
     
-    return cellBarcodes
+    return genotype_dict
 
-
+    
 
 
 # Input: mapped & corrected BAM file from DropSeq, barcodeToSpacer mapping dict, 
@@ -196,6 +171,7 @@ def getCellBarcodes(bamFile, coreCells, barcode_length, bc_start_handle,
         
     return cellBarcodes
 
+
 # Maps the cell barcodes from the gRNA calling onto the cells from the counts matrix
 def _collapseCells(cellBarcodes, coreCells, edit_dist):
     cellTagCollisions = 0
@@ -226,6 +202,7 @@ def _collapseCells(cellBarcodes, coreCells, edit_dist):
 
     return collapsedCellBarcodes
 
+
 # Merge the cells mapping to the parent barcode (from the counts matrix)
 def _mergeCells(cellBarcodes, parentBC, children):
     newCell = Cell(parentBC)
@@ -234,6 +211,7 @@ def _mergeCells(cellBarcodes, parentBC, children):
         newCell.molTags = _mergeCounterDict(newCell.molTags,childCell.molTags)
         newCell.gbc_reads = newCell.gbc_reads + childCell.gbc_reads
     return newCell
+
 
 # Merge two dictionaries of counters (or counters)
 def _mergeCounterDict(counterDictA, counterDictB):
@@ -252,7 +230,8 @@ def _getTag(read,tagName):
         if tag == tagName: 
             return val
     return False
-                    
+
+
 # Input: pysam AlignedSegment object
 # Output: gRNA barcode if it exists, False otherwise
 def _getBarcode(read, barcode_length, bc_start_handle, bc_end_handle):
@@ -297,214 +276,6 @@ def _thresholdCounterRead(counter, minReads = 1):
         if count < minReads:
             del counter[k]
     return counter
-
-### Modules for mapping barcodes to spacers from plasmid amplicon sequencing ###
-
-# Input: Name of CRISPR plasmid library Fastq file linking spacers to gRNA barcodes
-# Output: Dict with barcode as key and spacer as value. 
-def parsePlasmidFile(plasmidFastqFile,spacer_file,edit_dist=1,plasmidFastqFileMate=None,
-                     threshold=2):
-    spHandles = ('ACGAAACACCG','GTTTTAGAGC')
-    bcHandles = ('CGAGTCGGTGC','TATGAGGA')
-
-    if plasmidFastqFileMate:
-        barcodeSpacerCounts = _parsePairedEnd(plasmidFastqFile,plasmidFastqFileMate,
-                                              spHandles,bcHandles,edit_dist)
-    else:
-        barcodeSpacerCounts = _parseSingleEnd(plasmidFastqFile,spHandles,
-                                              bcHandles,edit_dist)
-    barcodeSpacerCounts = _keepTargetSpacers(barcodeSpacerCounts,spacer_file,
-                                             edit_dist = 2)
-    
-    barcodeCounts = _sumDict(barcodeSpacerCounts)
-    if edit_dist > 0:
-        barcodeSpacerCounts,barcodeCounts = collapseBarcodesExact(barcodeSpacerCounts,
-                                                                  edit_dist,barcodeCounts)
-    
-    barcodeSpacerCounts = _thresholdBarcodes(barcodeSpacerCounts,threshold)
-    barcodeToSpacer = _callBarcodes(barcodeSpacerCounts,0.95,True)
-    
-    barcodeCounts = _sumDict(barcodeSpacerCounts) 
-    usedReads = 0
-    for v in barcodeCounts.values():
-        usedReads += v
-
-    print 'Used reads = ' + str(usedReads)
-    print 'Number of barcodes = ' + str(len(barcodeSpacerCounts))
-    
-    guides = {} 
-    with open(spacer_file) as f:
-        for line in f:
-            fields = str.strip(line).split('\t')
-            guides[fields[1]] = fields[0]
-    
-    barcodeToGene = {k:guides[v].split('_')[0] for k,v in barcodeToSpacer.items()}
-    
-    return barcodeToGene
-
-
-# Input: dictionary of counters
-# Output: dictionary with counters summed
-def _sumDict(dictOfCounters):
-    totalCounts = Counter() 
-    for k,v in dictOfCounters.items():
-        totalCounts[k] += sum(v.values()) 
-    return totalCounts
-
-
-# Input: name of plasmid fastq file, sequence before spacer, sequence before barcode, edit distance
-# Output: dictionary with barcode as key, spacer as value 
-def _parseSingleEnd(plasmidFastqFile, spHandles, bcHandles, edit_dist):
-    totalReads = 0
-    barcodeSpacerCounts = defaultdict(Counter) # Number of reads per barcode
-
-    f = gzip.open(plasmidFastqFile,'rb')
-    for read in SeqIO.parse(f,'fastq'):
-        totalReads += 1
-        
-        # Find start and end positions of spacer & barcode sequences
-        spStart = list(approxHammingSearch(spHandles[0],read.seq))
-        spEnd = list(approxHammingSearch(spHandles[1],read.seq))
-        bcStart = list(approxHammingSearch(bcHandles[0],read.seq))
-        #bcEnd = list(approxHammingSearch(bcHandles[1],read.seq))
-
-        # Ensure that the spacer & barcode handles only map to one position on the read
-        if len(spStart) >= 1 and len(spEnd) >= 1 and len(bcStart) >= 1:
-            spStart = spStart[0][1] + len(spHandles[0]) 
-            spEnd = spEnd[-1][1]
-            bcStart = bcStart[0][1] + len(bcHandles[0])
-            #bcEnd = bcEnd[-1][1]
-            
-
-            # Ensure the barcode is exactly 12 bp
-            # if bcEnd-bcStart == 12:
-            spacer = str(read.seq[spStart:spEnd])
-            barcode = str(read.seq[bcStart:bcStart+BARCODE_LENGTH])
-            
-            quals = read.letter_annotations['phred_quality']
-            spacerQuals = quals[spStart:spEnd]
-            barcodeQuals = quals[bcStart:bcStart+BARCODE_LENGTH]
-
-            if len(barcode) == BARCODE_LENGTH and belowQual(spacerQuals,20) <= 3 and \
-                    belowQual(barcodeQuals,20) <= 3:
-                barcodeSpacerCounts[barcode][spacer] += 1 
-    f.close()
-    return barcodeSpacerCounts
-     
-
-# Input: name of plasmid fastq file, sequence before spacer, sequence before barcode, edit distance
-# Output: dictionary with barcode as key, spacer as value 
-def _parsePairedEnd(plasmidFastqFile,plasmidFastqFileMate,spHandles,bcHandles,edit_dist):
-    bcLen = len(bcHandles[0])
-    spLen = len(spHandles[0])
-    
-    # Parse spacer fastq file (read 1)
-    spacers = defaultdict(str)
-    if plasmidFastqFile.split('.')[-1] == 'gz':
-        f = gzip.open(plasmidFastqFile)
-    else:
-        f = open(plasmidFastqFile)
-    for read in SeqIO.parse(f,'fastq'):
-        spStart = list(approxHammingSearch(spHandles[0],read.seq))
-        if len(spStart) >= 1:
-            spStart = argmin(spStart) + spLen
-            spacer =  str(read.seq[spStart:spStart+20])
-            quals = read.letter_annotations['phred_quality']
-            spQuals = quals[spStart:spStart + 20]
-            if belowQual(spQuals,20) < 2:
-                spacers[str(read.id)] = spacer 
-    f.close()
-    
-    # Parse barcode fastq file (read 2)
-    barcodeSpacerCounts = defaultdict(Counter)
-    totalReads = 0
-    
-    if plasmidFastqFile.split('.')[-1] == 'gz':
-        f = gzip.open(plasmidFastqFileMate)
-    else:
-        f = open(plasmidFastqFileMate)
-    for read in SeqIO.parse(f,'fastq'):
-        totalReads += 1
-        readSeq = read.seq.reverse_complement()
-        bcStart = list(approxHammingSearch(bcHandles[0],readSeq))
-        bcEnd = list(approxHammingSearch(bcHandles[1],readSeq))
-         
-        if len(bcEnd) >= 1 and len(bcStart) >= 1:
-            bcStart = argmin(bcStart) + len(bcHandles[0]) 
-            bcEnd = argmin(bcEnd)
-            barcode = str(readSeq[bcStart:bcEnd])
-            quals = read.letter_annotations['phred_quality']
-            barcodeQuals = quals[bcStart:bcEnd]
-            if (len(barcode) == BARCODE_LENGTH or len(barcode) == BARCODE_LENGTH - 1) \
-                    and belowQual(barcodeQuals,20) < 2 and str(read.id) in spacers:
-                spacer = spacers[str(read.id)]
-                barcodeSpacerCounts[barcode][spacer] += 1
-    f.close()
-    return barcodeSpacerCounts 
-
-
-# Input: barcode-spacer mapping dictionary, minimum read threshold
-# Output: barcode-spacer mappings with all mappings below minreads removed
-def _thresholdBarcodes(barcodeSpacerCounts, minreads):
-    for bc,spacerDict in barcodeSpacerCounts.items():
-        for spacer,count in spacerDict.items():
-            if count < minreads:
-                del barcodeSpacerCounts[bc][spacer]
-        
-        if len(barcodeSpacerCounts[bc]) == 0:
-            del barcodeSpacerCounts[bc]
-    
-    return barcodeSpacerCounts
-
-# Input: barcode-spacer mapping counts, min read fraction
-# Output: barcode-spacer mappings if one barcode-spacer mapping contains at
-#         least the min read fraction of the reads among all possible mappings
-def _callBarcodes(barcodeSpacerCounts,minFraction=0.9,print_collision=False):
-    barcodeToSpacer = defaultdict(str)
-    totalBarcodes = len(barcodeSpacerCounts)
-    for barcode,counts in barcodeSpacerCounts.items():
-        totalCounts = sum(counts.values())
-        collision = True
-        for key,count in counts.items():
-            if float(count)/totalCounts >= minFraction:
-                barcodeToSpacer[barcode] = key
-                collision = False
-                break
-        
-        if collision:
-            del barcodeSpacerCounts[barcode]
-        
-    collisionRate = float(totalBarcodes-len(barcodeToSpacer))/totalBarcodes
-    if print_collision:
-        print 'Collision Rate = ' + str(collisionRate)
-
-    return barcodeToSpacer
-
-
-# Input: barcode-spacer mappings; file with all library spacer sequences, edit_dist
-# Output: barcode-spacer mappings with only spacers that are in the library
-def _keepTargetSpacers(barcodeSpacerCounts,libraryGuideFile,edit_dist=2):
-    guides = set()
-    with open(libraryGuideFile) as f:
-        for line in f:
-            guides.add(str.strip(line.split('\t')[1]))
-    
-    for barcode,spacerCounts in barcodeSpacerCounts.items():
-        newSpacerCounts = Counter()
-        for spacer in spacerCounts:
-            guideSpacer = exactExists(guides,spacer,edit_dist)
-            if guideSpacer:
-                if type(guideSpacer) == str:
-                    newSpacerCounts[guideSpacer] += barcodeSpacerCounts[barcode][spacer] 
-                else:
-                    newSpacerCounts[guideSpacer[0]] += barcodeSpacerCounts[barcode][spacer]
-
-        if len(newSpacerCounts) == 0:
-            del barcodeSpacerCounts[barcode]
-        else:
-            barcodeSpacerCounts[barcode] = newSpacerCounts
-
-    return barcodeSpacerCounts
 
 
 if __name__ == '__main__': main()

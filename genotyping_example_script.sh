@@ -1,6 +1,6 @@
 #!/bin/bash
 
-matrixName=
+cellBarcodePath=
 fastqName=
 barcodeToGene=
 
@@ -12,10 +12,10 @@ python ~/genotyping-matrices/convert_gRNA.py $fastqName\_R1.fastq.gz $fastqName\
 samtools index $fastqName\_R2.tagged.bam
 
 # Parse cell barcodes and store in python dictionary
-python $HOME/genotyping-matrices/parseCellBarcodes.py $matrixName $fastqName\_R2.tagged.bam 20 'GGCTGTTACGCG' 'CTACTGAC'
+python $HOME/genotyping-matrices/parseCellBarcodes.py $cellBarcodePath $fastqName\_R2.tagged.bam 20 'GGCTGTTACGCG' 'CTACTGAC'
  
 # Plot distribution of reads per UMI in order to set appropriate thresholds
 python $HOME/genotyping-matrices/plotUMIdist.py $fastqName\_R2_cell_barcodes.pickle 0.01
 
 # Genotype cells: outputs a genotype dictionary in csv format
-python $HOME/genotyping-matrices/genotypeCells.py $matrixName $fastqName\_R2_cell_barcodes.pickle $barcodeToGene 0.1 0.1 0.01
+python $HOME/genotyping-matrices/genotypeCells.py $fastqName\_pheno_dict.csv $fastqName\_R2_cell_barcodes.pickle $barcodeToGene 0.1 0.1 0.01
