@@ -2,6 +2,7 @@
 
 cellBarcodePath=
 fastqName=
+outputGenotypeDict=
 barcodeToGene=
 
 # Convert from fastq to bam	
@@ -18,4 +19,4 @@ python $HOME/genotyping-matrices/parseCellBarcodes.py $cellBarcodePath $fastqNam
 python $HOME/genotyping-matrices/plotUMIdist.py $fastqName\_R2_cell_barcodes.pickle 0.01
 
 # Genotype cells: outputs a genotype dictionary in csv format
-python $HOME/genotyping-matrices/genotypeCells.py $fastqName\_pheno_dict.csv $fastqName\_R2_cell_barcodes.pickle $barcodeToGene 0.1 0.1 0.01
+python $HOME/genotyping-matrices/genotypeCells.py $fastqName\_R2_cell_barcodes.pickle $outputGenotypeDict $barcodeToGene 0.1 0.1 0.01

@@ -278,4 +278,18 @@ def _thresholdCounterRead(counter, minReads = 1):
     return counter
 
 
+# Input: barcode-spacer mapping dictionary, minimum read threshold
+# Output: barcode-spacer mappings with all mappings below minreads removed
+def _thresholdBarcodes(barcodeSpacerCounts, minreads):
+    for bc,spacerDict in barcodeSpacerCounts.items():
+        for spacer,count in spacerDict.items():
+            if count < minreads:
+                del barcodeSpacerCounts[bc][spacer]
+        
+        if len(barcodeSpacerCounts[bc]) == 0:
+            del barcodeSpacerCounts[bc]
+    
+    return barcodeSpacerCounts
+
+
 if __name__ == '__main__': main()
