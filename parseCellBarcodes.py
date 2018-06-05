@@ -9,8 +9,8 @@ import pandas as pd
 cellBarcodesFile = sys.argv[1]
 bamFile = sys.argv[2]
 BARCODE_LENGTH = int(sys.argv[3])
-BC_START_HANDLE = sys.argv[4]
-BC_END_HANDLE = sys.argv[5]
+BC_START_HANDLE = sys.argv[4].upper()
+BC_END_HANDLE = sys.argv[5].upper()
 
 cbc_edit_dist = 1 # Edit distance between cells
 gbc_edit_dist = 1
@@ -29,13 +29,11 @@ gbc_edit_dist = 1
 cell_barcodes = []
 with open(cellBarcodesFile) as f:
     for line in f:
-        cell_barcodes.append(str.strip(line))
-
-# Get cell names and total UMIs
-coreCells = df.sum(0).to_dict()
+        fields = str.strip(line).split("-")
+        cell_barcodes.append(fields[0])
 
 # Parse cell barcodes
-cellBarcodes = sc.getCellBarcodes(bamFile, coreCells, BARCODE_LENGTH, BC_START_HANDLE,
+cellBarcodes = sc.getCellBarcodes(bamFile, cell_barcodes, BARCODE_LENGTH, BC_START_HANDLE,
                                   BC_END_HANDLE, edit_dist = cbc_edit_dist)
 
 # Collapse barcodes within edit distance

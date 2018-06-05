@@ -2,7 +2,6 @@ import sys
 import pysam as ps
 import subprocess as sp
 import pandas as pd
-from dedupBarcodes import exactExists,belowQual
 from collections import Counter
 
 ## Script to convert 10X gRNA fastq files to a tagged bam file
@@ -42,9 +41,6 @@ def get_tags(read_file, start, end):
     fh = ps.FastxFile(read_file)
     for read in fh:
         tag = read.sequence[start:end]
-        #quals = list(read.quality)[start:end]
-        #quals = map(lambda x: ord(x) - 33, quals)
-        #if belowQual(quals,10) < 2:
         celltags.append((read.name,tag))
     fh.close()
     return celltags

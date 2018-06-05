@@ -27,7 +27,6 @@ class Cell:
     
     # Construct Cell object with cell barcode
     def __init__(self, cellTag):
-        self.transcripts = 0 # Number of cDNA UMIs
         self.gbc_reads = 0 # Number of gRNA reads
         
         self.type = None # Type: no-Plasmid, no-gRNA, usable
@@ -47,11 +46,12 @@ class Cell:
     def collapseMolTags(self, edit_dist):
         guideTags = self.molTags
         
+        guideTagCounts = {}
         for gbc, molTagCounts in guideTags.items():
             guideTags[gbc] = Counter(collapseBarcodesExact(molTagCounts, edit_dist=edit_dist,
                                                            hamming = True))
-        
-        guideTagCounts = _sumDict(guideTags) 
+            guideTagCounts[gbc] = sum(molTagCounts.values())
+
         guideTags,guideTagCounts = collapseBarcodesExact(guideTags, edit_dist, 
                                                          barcodeCounts = guideTagCounts)
            
@@ -197,7 +197,6 @@ def _collapseCells(cellBarcodes, coreCells, edit_dist):
     collapsedCellBarcodes = {}
     for parentBC,children in cellsToCollapse.items():
         newCell = _mergeCells(cellBarcodes, parentBC, children)
-        newCell.transcripts = coreCells[parentBC] 
         collapsedCellBarcodes[parentBC] = newCell
 
     return collapsedCellBarcodes
